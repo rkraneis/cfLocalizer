@@ -20,6 +20,10 @@ output="false"
 	}
 
 	/**
+	 * @hint "Search for 'text' in the repository and return the transalation for the current locale"
+	 *
+	 * If the environment is design or development and no translation is found add 'text' to the rpository and return it.
+	 *
 	 * @text "Text to localize"
 	 */
 	public any function localize(required string text)
@@ -117,13 +121,20 @@ output="false"
 		return loc.currentLocale;
 	}
 	
+	/**
+	 * @hint "Search for translatable strings in folderList and add them to the repository"
+	 *
+	 * May only be run in design or development modes.
+	 *
+	 * @folderList "List of folders to search for translations"
+	 */
 	public void function $$populateRepository(string folderList="controllers,models,views")
 	output="false"
 	{
 		var loc = {};
 		
 		if (!ListFindNoCase("design,development", get("environment")))
-			$throw(type="Wheels.Localizer.AccessDenied", message="The method `$$populateRepository` may only be run is design or development modes.");
+			$throw(type="Wheels.Localizer.AccessDenied", message="The method `$$populateRepository` may only be run in design or development modes.");
 		
 		loc.iEnd = ListLen(arguments.folderList);
 		for (loc.i = 1; loc.i lte loc.iEnd; loc.i++)
@@ -155,22 +166,30 @@ output="false"
 					for (loc.m = 1; loc.m lte loc.mEnd; loc.m++)
 					{
 						// for each match we have for the line, write it to the repo
-						loc.matches[loc.m] = REReplace(loc.matches[loc.m], "([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?['""])", "", "all");
-						loc.matches[loc.m] = REReplace(loc.matches[loc.m], "(['""][[:space:]]?)\)", "", "all");							
+						loc.matches[loc.m] = REReplace(loc.matches[loc.m], 
+								"([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?['""])", "", "all");
+						loc.matches[loc.m] = REReplace(loc.matches[loc.m], "(['""][[:space:]]?)\)", "", "all");
 						
 						loc.source = {};
 						loc.source.template = loc.file;
 						loc.source.line = loc.lineCount;
 						$writeTextIntoLocalizationRepository(text=loc.matches[loc.m], source=loc.source);
 					}
-					// do something here with the data in variable line      
-					loc.line = loc.lineReader.readLine();  
-					loc.lineCount++;    
+					// do something here with the data in variable line
+					loc.line = loc.lineReader.readLine();
+					loc.lineCount++;
 				}
 			}
 		}
 	}
 	
+	/**
+	 * @hint "Find a translation for 'text' in 'struct'"
+	 *
+	 * @text "The text to translate"
+	 * @struct "The struct containing the translation repository"
+	 * @source "Struct containing the template name and line of the translation in the sourcecode"
+	 */
 	public string function $findLocalizedText(required string text, required struct struct, required struct source)
 	output="false"
 	{
@@ -183,6 +202,11 @@ output="false"
 		return loc.returnValue;
 	}
 
+	/**
+	 * @hint "Load the struct containing the translations"
+	 *
+	 * @fromRepository "Determines wether to load the translation (en.cfm, de.cfm) or the untranslated repository (repository.cfm)"
+	 */
 	public struct function $getLocalizedText(boolean fromRepository=false)
 	output="false"
 	{
@@ -234,11 +258,15 @@ output="false"
 			// transform file output
 			loc.text = ReplaceList(loc.text, "[cfset,]]", "<cfset, />");
 			$file(action="append", file=ExpandPath("plugins/localizer/locales/repository.cfm"), output=loc.text);
-			// when we have template caching turned on in coldfusion, the first version of the template is the one that will be retrieved for the rest of the request, not good
+			// when we have template caching turned on in coldfusion, the first version of the template is the one that will be 
+			// retrieved for the rest of the request, not good
 			request.localizer.writes[arguments.source.template][arguments.source.line][arguments.text] = arguments.text;
 		}
 	}
 	
+	/**
+	 * @hint "Captures name and line number from calling template"
+	 */
 	public struct function $captureTemplateAndLineNumber()
 	output="false"
 	{
@@ -252,6 +280,9 @@ output="false"
 		return loc.ret;
 	}
 	
+	/**
+	 * @hint "Captures name and line number from calling template"
+	 */
 	public struct function $getCallingTemplateInfo()
 	output="false"
 	{
@@ -263,7 +294,8 @@ output="false"
 		for (loc.i = 1; loc.i lte loc.iEnd; loc.i++)
 		{
 			loc.fileName = loc.stackTrace[loc.i].getFileName();
-			if (StructKeyExists(loc, "fileName") && !FindNoCase(".java", loc.fileName) && !FindNoCase("Localizer.cfc", loc.fileName) && !FindNoCase("<generated>", loc.fileName))
+			if (StructKeyExists(loc, "fileName") && !FindNoCase(".java", loc.fileName) 
+					&& !FindNoCase("Localizer.cfc", loc.fileName) && !FindNoCase("<generated>", loc.fileName))
 			{
 				loc.returnValue.template = loc.fileName;
 				loc.returnValue.line = loc.stackTrace[loc.i].getLineNumber();
@@ -273,6 +305,11 @@ output="false"
 		return loc.returnValue;
 	}
 	
+	/**
+	 * @hint "Includes the struct containing the translations if it is not already cached in this request"
+	 *
+	 * @template "Path to the repository to include"
+	 */
 	public struct function $includeRepository(required string template)
 	output="false"
 	{

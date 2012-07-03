@@ -194,18 +194,17 @@ output="false"
 	output="false"
 	{
 		var loc = {};
+		loc.hash = Hash(arguments.text,'SHA-1','utf-8');
 		loc.returnValue = "";
-		if (StructKeyExists(arguments.struct, arguments.source.template))
-			if (StructKeyExists(arguments.struct[arguments.source.template], arguments.source.line))
-				if (StructKeyExists(arguments.struct[arguments.source.template][arguments.source.line], arguments.text))
-					loc.returnValue = arguments.struct[arguments.source.template][arguments.source.line][arguments.text];
+		if (StructKeyExists(arguments.struct, loc.hash))
+			loc.returnValue = arguments.struct[loc.hash];
 		return loc.returnValue;
 	}
 
 	/**
 	 * @hint "Load the struct containing the translations"
 	 *
-	 * @fromRepository "Determines wether to load the translation (en.cfm, de.cfm) or the untranslated repository (repository.cfm)"
+	 * @fromRepository "Determines whether to load the translation (en.cfm, de.cfm) or the untranslated repository (repository.cfm)"
 	 */
 	public struct function $getLocalizedText(boolean fromRepository=false)
 	output="false"
@@ -237,16 +236,13 @@ output="false"
 	output="false"
 	{
 		var loc = {};
-		/*
-			save texts with a greater nesting to make sure same texts with different casings in different files get saved
-			we might have some dups but it will save on the head scratching wondering how something became lower case
-			i think this helps make the repository file more self descriptive and the struct if you dump it out
-			more nesting is also faster as there are less items per structure
-		*/
+		loc.CRLF = Chr(13) & Chr(10);
+		loc.hash = Hash(arguments.text,'SHA-1','utf-8');
+		
 		savecontent variable="loc.text" {
-			WriteOutput('[cfset loc["#arguments.source.template#"]["#arguments.source.line#"]["#arguments.text#"] = "#arguments.text#"]]');
+			WriteOutput('[!--- (source: #source.template#:#source.line#) "#arguments.text#" ---]' & loc.CRLF);
+			WriteOutput('[cfset loc["#loc.hash#"] = "#arguments.text#"]]');
 		}
-
 		if (!StructKeyExists(request, "localizer") or !StructKeyExists(request.localizer, "writes"))
 			request.localizer.writes = {};		
 		loc.repo = $getLocalizedText(fromRepository=true);
@@ -256,11 +252,12 @@ output="false"
 		if (!Len(loc.repoString) && !Len(loc.inRequest))
 		{
 			// transform file output
+			loc.text = ReplaceList(loc.text, "[!---,---]", "<!---,--->");
 			loc.text = ReplaceList(loc.text, "[cfset,]]", "<cfset, />");
 			$file(action="append", file=ExpandPath("plugins/localizer/locales/repository.cfm"), output=loc.text);
 			// when we have template caching turned on in coldfusion, the first version of the template is the one that will be 
 			// retrieved for the rest of the request, not good
-			request.localizer.writes[arguments.source.template][arguments.source.line][arguments.text] = arguments.text;
+			request.localizer.writes[loc.hash] = arguments.text;
 		}
 	}
 	

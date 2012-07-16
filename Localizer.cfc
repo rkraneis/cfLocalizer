@@ -170,6 +170,15 @@ output="false"
 								"([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?['""])", "", "all");
 						loc.matches[loc.m] = REReplace(loc.matches[loc.m], "(['""][[:space:]]?)\)", "", "all");
 						
+						loc.textContainsDynamicText = (loc.matches[loc.m] CONTAINS "{" AND loc.matches[loc.m] CONTAINS "}");
+						if (loc.textContainsDynamicText)
+						{
+							loc.textBetweenDynamicText = REMatch("{(.*?)}", loc.matches[loc.m]);
+							loc.iEnd = ArrayLen(loc.textBetweenDynamicText);
+							for (loc.i = 1; loc.i lte loc.iEnd; loc.i++)
+								loc.matches[loc.m] = Replace(loc.matches[loc.m], loc.textBetweenDynamicText[loc.i], "{variable}", "all");
+						}
+						
 						loc.source = {};
 						loc.source.template = loc.file;
 						loc.source.line = loc.lineCount;

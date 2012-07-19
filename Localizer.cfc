@@ -136,6 +136,8 @@ output="false"
 		if (!ListFindNoCase("design,development", get("environment")))
 			$throw(type="Wheels.Localizer.AccessDenied", message="The method `$$populateRepository` may only be run in design or development modes.");
 		
+		//writeOutput("Folders to work on: #arguments.folderList#");
+		//writeOutput("<ul>");
 		loc.iEnd = ListLen(arguments.folderList);
 		for (loc.i = 1; loc.i lte loc.iEnd; loc.i++)
 		{
@@ -149,6 +151,8 @@ output="false"
 				loc.filter = "*.cfm";
 			
 			loc.files = $directory(action="list", type="file", recurse=true, filter=loc.filter, listInfo="name", directory=ExpandPath(loc.relativeDir));
+			//writeOutput("<li>#loc.relativeDir#</li>");
+			//writeOutput("<ul>");
 			loc.xEnd = loc.files.RecordCount;
 			for (loc.x = 1; loc.x lte loc.xEnd; loc.x++)
 			{
@@ -158,7 +162,7 @@ output="false"
 				
 				loc.line = loc.lineReader.readLine();  
 				loc.lineCount = 1;  
-				
+				//writeOutput("<li>#loc.files.name[loc.x]#</li>");
 				while (StructKeyExists(loc, "line")) 
 				{
 					loc.matches = REMatch("([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?['""](.*?)['""][[:space:]]?)\)", loc.line);
@@ -174,9 +178,9 @@ output="false"
 						if (loc.textContainsDynamicText)
 						{
 							loc.textBetweenDynamicText = REMatch("{(.*?)}", loc.matches[loc.m]);
-							loc.iEnd = ArrayLen(loc.textBetweenDynamicText);
-							for (loc.i = 1; loc.i lte loc.iEnd; loc.i++)
-								loc.matches[loc.m] = Replace(loc.matches[loc.m], loc.textBetweenDynamicText[loc.i], "{variable}", "all");
+							loc.nEnd = ArrayLen(loc.textBetweenDynamicText);
+							for (loc.n = 1; loc.n lte loc.nEnd; loc.n++)
+								loc.matches[loc.m] = Replace(loc.matches[loc.m], loc.textBetweenDynamicText[loc.n], "{variable}", "all");
 						}
 						
 						loc.source = {};
@@ -189,7 +193,9 @@ output="false"
 					loc.lineCount++;
 				}
 			}
+			//writeOutput("</ul>");
 		}
+		//writeOutput("</ul>");
 	}
 	
 	/**

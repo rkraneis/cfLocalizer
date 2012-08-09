@@ -42,9 +42,12 @@ output="false"
 		{
 			loc.textBetweenDynamicText = REMatch("{(.*?)}", arguments.text);
 			loc.iEnd = ArrayLen(loc.textBetweenDynamicText);
-			for (loc.i = 1; loc.i lte loc.iEnd; loc.i++)
+			for (loc.i = 1; loc.i <= loc.iEnd; loc.i++)
+			{
 				arguments.text = Replace(arguments.text, loc.textBetweenDynamicText[loc.i], "{variable}", "all");
+			}
 		}
+		
 		// Return the localized text in the current locale
 		loc.translation = $findLocalizedText(text=arguments.text, struct=loc.localizedText, source=arguments.source);
 		if (ListFindNoCase("design,development", get("environment")))
@@ -63,12 +66,15 @@ output="false"
 		{
 			loc.result = loc.translation;
 		}
+		
 		if (loc.textContainsDynamicText)
 		{
 			// Go through the array and replace the "{variable}" back with the respective values 
 			loc.iEnd = ArrayLen(loc.textBetweenDynamicText);
-			for (loc.i = 1; loc.i lte loc.iEnd; loc.i++)
+			for (loc.i = 1; loc.i <= loc.iEnd; loc.i++)
+			{
 				loc.result = Replace(loc.result, "{variable}", loc.textBetweenDynamicText[loc.i]);
+			}
 			// Remove all "{}"
 			loc.result = ReplaceList(loc.result, "{,}", "");
 		}
@@ -81,6 +87,7 @@ output="false"
 	public string function getLocaleCode()
 	{
 		var loc = {};
+		
 		loc.currentLocale = getLocale();
 		// translate coldfusion locales to their corresponding codes
 		if (Len(loc.currentLocale) gt 5)
@@ -139,22 +146,24 @@ output="false"
 		//writeOutput("Folders to work on: #arguments.folderList#");
 		//writeOutput("<ul>");
 		loc.iEnd = ListLen(arguments.folderList);
-		for (loc.i = 1; loc.i lte loc.iEnd; loc.i++)
+		for (loc.i = 1; loc.i <= loc.iEnd; loc.i++)
 		{
 			// get our directory from the list
 			loc.relativeDir = ListGetAt(arguments.folderList, loc.i);
 			
 			// decide how we should filter the files
 			if (ListFindNoCase("controllers,models", loc.relativeDir))
+			{
 				loc.filter = "*.cfc";
+			}
 			else
+			{
 				loc.filter = "*.cfm";
+			}
 			
 			loc.files = $directory(action="list", type="file", recurse=true, filter=loc.filter, listInfo="name", directory=ExpandPath(loc.relativeDir));
-			//writeOutput("<li>#loc.relativeDir#</li>");
-			//writeOutput("<ul>");
 			loc.xEnd = loc.files.RecordCount;
-			for (loc.x = 1; loc.x lte loc.xEnd; loc.x++)
+			for (loc.x = 1; loc.x <= loc.xEnd; loc.x++)
 			{
 				loc.file = loc.relativeDir & "/" & loc.files.name[loc.x];
 				loc.fileReader = CreateObject("java", "java.io.FileReader").init(ExpandPath(loc.file));
@@ -167,7 +176,7 @@ output="false"
 				{
 					loc.matches = REMatch("([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?['""](.*?)['""][[:space:]]?)\)", loc.line);
 					loc.mEnd = ArrayLen(loc.matches);
-					for (loc.m = 1; loc.m lte loc.mEnd; loc.m++)
+					for (loc.m = 1; loc.m <= loc.mEnd; loc.m++)
 					{
 						// for each match we have for the line, write it to the repo
 						loc.matches[loc.m] = REReplace(loc.matches[loc.m], 
@@ -179,8 +188,10 @@ output="false"
 						{
 							loc.textBetweenDynamicText = REMatch("{(.*?)}", loc.matches[loc.m]);
 							loc.nEnd = ArrayLen(loc.textBetweenDynamicText);
-							for (loc.n = 1; loc.n lte loc.nEnd; loc.n++)
+							for (loc.n = 1; loc.n <= loc.nEnd; loc.n++)
+							{
 								loc.matches[loc.m] = Replace(loc.matches[loc.m], loc.textBetweenDynamicText[loc.n], "{variable}", "all");
+							}
 						}
 						
 						loc.source = {};
@@ -193,9 +204,7 @@ output="false"
 					loc.lineCount++;
 				}
 			}
-			//writeOutput("</ul>");
 		}
-		//writeOutput("</ul>");
 	}
 	
 	/**
@@ -209,10 +218,14 @@ output="false"
 	output="false"
 	{
 		var loc = {};
+		
 		loc.hash = Hash(arguments.text,'SHA-1','utf-8');
 		loc.returnValue = "";
+		
 		if (StructKeyExists(arguments.struct, loc.hash))
+		{
 			loc.returnValue = arguments.struct[loc.hash];
+		}
 		return loc.returnValue;
 	}
 
@@ -225,19 +238,28 @@ output="false"
 	output="false"
 	{
 		var loc = {};
+		
 		loc.texts = {}; // initialize this value in case we write a file
 		
 		if (!arguments.fromRepository)
+		{
 			loc.currentLocale = getLocaleCode();
+		}
 		else
+		{
 			loc.currentLocale = "repository";
+		}
 		
 		loc.includePath = LCase("locales/#loc.currentLocale#.cfm");
 		loc.filePath = LCase("plugins/localizer/locales/#loc.currentLocale#.cfm");
 		if (FileExists(ExpandPath(loc.filePath)))
+		{
 			loc.texts = $includeRepository(loc.includePath);
+		}
 		else
+		{
 			$file(action="write", file=ExpandPath(loc.filePath), output="");
+		}
 		return loc.texts;
 	}
 	
@@ -251,6 +273,7 @@ output="false"
 	output="false"
 	{
 		var loc = {};
+		
 		loc.CRLF = Chr(13) & Chr(10);
 		loc.hash = Hash(arguments.text,'SHA-1','utf-8');
 		
@@ -258,12 +281,17 @@ output="false"
 			WriteOutput('[!--- (source: #source.template#:#source.line#) "#arguments.text#" ---]' & loc.CRLF);
 			WriteOutput('[cfset loc["#loc.hash#"] = "#arguments.text#"]]');
 		}
+		
 		if (!StructKeyExists(request, "localizer") or !StructKeyExists(request.localizer, "writes"))
-			request.localizer.writes = {};		
+		{
+			request.localizer.writes = {};
+		}		
+		
 		loc.repo = $getLocalizedText(fromRepository=true);
 		// Check first if the variable is written already
 		loc.repoString = $findLocalizedText(text=arguments.text, struct=loc.repo, source=arguments.source);
 		loc.inRequest = $findLocalizedText(text=arguments.text, struct=request.localizer.writes, source=arguments.source);
+		
 		if (!Len(loc.repoString) && !Len(loc.inRequest))
 		{
 			// transform file output
@@ -289,6 +317,7 @@ output="false"
 			// instead of RemoveChars, lets replace the path since replace will cause less issues
 			loc.ret.template = ListChangeDelims(
 					ReplaceNoCase(loc.ret.template, ExpandPath(application.wheels.webpath), ""), "/", "\/"); 
+		
 		return loc.ret;
 	}
 	
@@ -299,11 +328,12 @@ output="false"
 	output="false"
 	{
 		var loc = {};
+		
 		loc.returnValue = { template = "unknown", line = "unknown"};
 		loc.stackTrace = CreateObject("java", "java.lang.Throwable").getStackTrace();
 		
 		loc.iEnd = ArrayLen(loc.stackTrace);
-		for (loc.i = 1; loc.i lte loc.iEnd; loc.i++)
+		for (loc.i = 1; loc.i <= loc.iEnd; loc.i++)
 		{
 			loc.fileName = loc.stackTrace[loc.i].getFileName();
 			if (StructKeyExists(loc, "fileName") && !FindNoCase(".java", loc.fileName) 
@@ -326,14 +356,20 @@ output="false"
 	output="false"
 	{
 		var loc = {};
+		
 		if(!StructKeyExists(request, "localizer") || !StructKeyExists(request.localizer, "cache"))
+		{
 			request.localizer.cache = {};
+		}
 		
 		if(StructKeyExists(request.localizer.cache, arguments.template))
+		{
 			return request.localizer.cache[arguments.template];
+		}
 		
 		include "#arguments.template#";
 		request.localizer.cache[arguments.template] = Duplicate(loc);
+		
 		return loc;
 	}
 	
@@ -346,28 +382,43 @@ output="false"
 	output="false"
 	{
 		var loc = {};
+		
 		$args(name="distanceOfTimeInWords", args=arguments);
 		loc.minuteDiff = DateDiff("n", arguments.fromTime, arguments.toTime);
 		loc.secondDiff = DateDiff("s", arguments.fromTime, arguments.toTime);
 		loc.hours = 0;
 		loc.days = 0;
 		loc.returnValue = "";
+		
 		if (loc.minuteDiff <= 1)
 		{
 			if (loc.secondDiff < 60)
+			{
 				loc.returnValue = l("less than a minute");
+			}
 			else
+			{
 				loc.returnValue = l("1 minute");
+			}
+			
 			if (arguments.includeSeconds)
 			{
 				if (loc.secondDiff < 5)
+				{
 					loc.returnValue = l("less than 5 seconds");
+				}
 				else if (loc.secondDiff < 10)
+				{
 					loc.returnValue = l("less than 10 seconds");
+				}
 				else if (loc.secondDiff < 20)
+				{
 					loc.returnValue = l("less than 20 seconds");
+				}
 				else if (loc.secondDiff < 40)
+				{
 					loc.returnValue = l("half a minute");
+				}		
 			}
 		}
 		else if (loc.minuteDiff < 45)

@@ -174,14 +174,17 @@ output="false"
 				//writeOutput("<li>#loc.files.name[loc.x]#</li>");
 				while (StructKeyExists(loc, "line")) 
 				{
-					loc.matches = REMatch("([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?['""](.*?)['""][[:space:]]?)\)", loc.line);
+					loc.matches = REMatch("([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?(['""])(.*?)\3[[:space:]]?)\)", loc.line);
 					loc.mEnd = ArrayLen(loc.matches);
 					for (loc.m = 1; loc.m <= loc.mEnd; loc.m++)
 					{
+						// capture the delimiter used; approach nonetheless still very broken
+						loc.delimiter = REFind("([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?(['""])(.*?)\3[[:space:]]?)\)",loc.matches[loc.m],1,true);
+						loc.delimiter = Mid(loc.matches[loc.m], loc.delimiter.pos[4], loc.delimiter.len[4]);
 						// for each match we have for the line, write it to the repo
 						loc.matches[loc.m] = REReplace(loc.matches[loc.m], 
-								"([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?['""])", "", "all");
-						loc.matches[loc.m] = REReplace(loc.matches[loc.m], "(['""][[:space:]]?)\)", "", "all");
+								"([^a-zA-Z0-9]l|[^a-zA-Z0-9]localize)[[:space:]]?(\([[:space:]]?[#loc.delimiter#])", "", "all");
+						loc.matches[loc.m] = REReplace(loc.matches[loc.m], "([#loc.delimiter#][[:space:]]?)\)$", "", "all");
 						
 						loc.textContainsDynamicText = (loc.matches[loc.m] CONTAINS "{" AND loc.matches[loc.m] CONTAINS "}");
 						if (loc.textContainsDynamicText)
